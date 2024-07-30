@@ -1,3 +1,4 @@
+import time
 import requests
 import pwinput # essa biblioteca precisa ser instalada e tem objetivo de mostrar asteriscos no terminal ao digitar password
 import re # regra de caracteres para passwords
@@ -6,20 +7,39 @@ import re # regra de caracteres para passwords
 
 API_URL = 'http://127.0.0.1:5000'
 
+
+def user_exists(user_id):
+    pass
+
+def esc_to_menu():
+    visual_effect("Returning to menu")
+    main()
+
+def visual_effect(message="Carregando", duration=10):
+    print(message, end="")
+    for _ in range (duration):
+        print(".", end="", flush=True)
+        time.sleep(0.1)
+    print("Ok")
+
 def show_users():
     response = requests.get(f'{API_URL}/users')
     if response.status_code == 200:
         users = response.json()
         
+        visual_effect("\nShowing users")
+
         # USER HEADER
-        print(f"{'ID':<4} | {'EMAIL':<30} | {'PASSWORD':<12} | {'NAME':<12} | {'STATUS':<10}")
-        print("-"*70)            
+        print(f"\n{'ID':<4} | {'EMAIL':<30} | {'PASSWORD':<12} | {'NAME':<30} | {'STATUS':<10}")
+        print("-"*100)            
 
         # ANSI COLOR
         RED = '\033[91m'
         GREEN = '\033[92m'
         YELLOW = '\033[93m'
         RESET = '\033[0m'
+
+        
 
         for user in users: 
             id, email, password, name, status = user
@@ -34,7 +54,8 @@ def show_users():
                 color = GREEN
                 status_string = "Active"
 
-            print(f"{id:<4} | {email:<30} | {password:<12} | {name:<12} | {color}{status_string:<10}{RESET}")
+            
+            print(f"{id:<4} | {email:<30} | {password:<12} | {name:<30} | {color}{status_string:<10}{RESET}")
             print("")
     else:
         print("No users found")
@@ -53,28 +74,72 @@ def validate_password(password):
         raise ValueError("The password must have at least one special character")
     return True
 
-def add_user():
-    # REGRA PARA TER @ NO EMAIL
-    while True:
-        email = input("\nPlease, enter your email: ").lower()
-        if "@" in email:
-            break
-        else:
-            print("Email invalid, please try again.")
-
-    # REGRA CARACTERES PASSWORD
+def get_valid_password(prompt='''
+                               \nPlease, enter your password: 
+                                The length must be between 8 and 12 caracters,
+                               Also must contains at least une number, one special caracter,
+                               one upper and one lower case letter (Type esc to go to main menu): '''):
     while True:
         try:
-            password = pwinput.pwinput('''\nPlease, enter your password: 
-                                       The length must be between 8 and 12 caracters,
-                                       Also must contains at least une number, one special caracter,
-                                       one upper and one lower case letter: ''', mask='*')
+            password = pwinput.pwinput(prompt, mask='*')
+            if password.lower() == "esc":
+                main()
+            visual_effect("Conferindo requisitos de senha")
             validate_password(password)
-            break
+            password_confirm = pwinput.pwinput("\nPlease, confirm your password (Type esc to go to main menu): ")
+            if password_confirm == "esc":
+                main()
+            if password == password_confirm:
+                return password
+            else:
+                print("Passwords do not match. Please try again.")
+
         except ValueError as e:
-            print(e)
+            print(f"Invalid password: {e}")
+
+def check_email():
+    while True:
+        email = input("\nPlease, enter your email (type ESC to return to main menu): ").lower()
+        if email == "esc":
+            visual_effect("\nMain menu selected ")
+            main()
             
-    name = input("\nPlease, enter your name: ").upper()
+        visual_effect("Conferindo requisitos de emails")
+        # regra para conter arroba no email
+        if "@" not in email:
+            print("Error: Email invalid. No @.")
+            continue
+    
+        # regra para conter ponto no email
+        if "." not in email:
+            print("Error: Email invalid. No dot.")
+            continue
+
+        if len(email) < 8:
+            print("Error: Email invalid. Too short.")
+            continue
+
+        email_confirm = input("\nPlease, confirm your email (type ESC to return to main menu): ").lower()
+        if email_confirm == "esc":
+            visual_effect("\nMain menu selected ")
+            main()
+    
+        visual_effect("Conferindo igualdade de emails")
+        if email == email_confirm:
+            return email
+        else:
+            print("Emails do not match. Please try again.")
+
+def add_user():
+ 
+    email = check_email()
+
+    # REGRA CARACTERES PASSWORD
+    password = get_valid_password()
+
+    name = input("\nPlease, enter your name (Type esc do go to main menu): ").upper()
+    if name == "ESC":
+        main()
     status = 1 # status default - pending
     user_data = {
         'email': email,
@@ -86,7 +151,7 @@ def add_user():
     if response.status_code == 200:
         print(f"\nUser {name} created successfully")
     else:
-        print(f"\nError creating user {name}")
+        print(f"\nError creating user {name}.")
     
 
 def delete_user():
@@ -95,38 +160,53 @@ def delete_user():
     RED = '\033[91m'
     RESET = '\033[0m'
     
-    user_id = int(input("\nPlease, enter the user ID do be deleted: "))
+    user_id = (input("\nPlease, enter the user ID do be deleted (type esc to to main menu): "))
+    if user_id.lower() == "esc":
+        main()
+    user_id = int(user_id)
+
     confirmation = input(f"\n{RED}Are you sure you want to delete the user id'{user_id}'?  (y/n):  {RESET}").lower()
     if confirmation != 'y':
         print(f"\nOperação abortada")
     else:
         response = requests.delete(f'{API_URL}/users/{user_id}')
+        visual_effect("\nContating database",duration=15)
         if response.status_code == 200:
             print(f"\nUser {user_id} deleted successfully")
         else:
             print(f"\nError deleting user {user_id}")
 
 def update_user():
-    user_id = int(input("\nPlease, enter the user ID to be updated: "))
-    email = input("\nPlease, enter the new e-mail: ").lower()
-    name = input("\nPlease, enter new name: ").upper()
+    user_id = (input("\nPlease, enter the user ID to be updated (type esc to go to main menu): "))
+    if user_id.lower() == "esc":
+        main()
+    user_id = int(user_id)
+    email = check_email()
+    name = input("\nPlease, enter new name (type esc do quit): ").upper()
+    if name == "ESC":
+        main()
     user_data = {
         'email': email,
         'name': name
     }
     response = requests.put(f'{API_URL}/users/{user_id}', json=user_data)
+    visual_effect("\nContating database",duration=15)
     if response.status_code == 200:
         print(f"\nUser {user_id} updated successfully")
     else:
         print(f"\nError updating user {user_id}")
 
 def troca_senha():
-    user_id = int(input("\nPlease, enter the user ID to update the password: "))
-    password = input("\nPlease, enter the new password: ")
+    user_id = (input("\nPlease, enter the user ID to update the password (type esc to quit): "))
+    if user_id.lower() == "esc":
+        main()
+    user_id = int(user_id)
+    password = get_valid_password()
     user_data = {
         'password': password,
     }
     response = requests.put(f'{API_URL}/users/{user_id}', json=user_data)
+    visual_effect("\nContating database",duration=15)
     if response.status_code == 200:
         print(f"\nUser {user_id} password updated successfully")
     else:
@@ -134,16 +214,21 @@ def troca_senha():
     
 
 def altera_status():
-    user_id = int(input("\nPlease, enter the user ID to update the status: "))
+    user_id = (input("\nPlease, enter the user ID to update the status (type esc to quit): "))
+    if user_id.lower() == "esc":
+        main()
+    user_id = int(user_id)
     status = input("\nPlease, enter the new status (0 == inactive, 1 == pending, 2 == active): ")
     user_data = {
         'status': status,
     }
     response = requests.put(f'{API_URL}/users/{user_id}', json=user_data)
+    visual_effect("\nContating database",duration=15)
     if response.status_code == 200:
         print(f"\nUser {user_id} status updated successfully")
     else:
         print(f"\nError updating user {user_id}") 
+
 
 def main():
     while True:
@@ -179,18 +264,4 @@ def main():
 if __name__ == "__main__":
     main()
 
-
-    # verificar se ao cadastrar email ou alterar email, ja nao existe cadastro com o mesmo email
-    # verificacao em duas etapas para login - usar servico sendgrid
-    # funcao exclusiva para troca de senha
-    # funcao exclusiva para inativar um id
-
-# IMPLEMENTAÇÕES OK
-  # email com @ - ok
-  # função deletar, vai excluir usuário caso o mesmo já esteja inativo
-  # Passwords com asterisco no terminal
-  # tamanho maximo de passwords
-  # emails em lower, nomes em upper
-  # colocar regra na senha. pelo menos um caracter especial, um upper, um lowe e um numero (biblioteca re)
-  # conceito server / client usando API
 
