@@ -6,14 +6,7 @@ import re # regra de caracteres para passwords
 #STATUS CODES: 0 == inactive; 1 == pending; 2 == active
 
 API_URL = 'http://127.0.0.1:5000'
-
-
-def user_exists(user_id):
-    pass
-
-def esc_to_menu():
-    visual_effect("Returning to menu")
-    main()
+VERIFICATION_API_URL = 'http://127.0.0.1:5001/verify'  
 
 def visual_effect(message="Carregando", duration=10):
     print(message, end="")
@@ -21,6 +14,13 @@ def visual_effect(message="Carregando", duration=10):
         print(".", end="", flush=True)
         time.sleep(0.1)
     print("Ok")
+
+def user_exists(user_id):
+    pass
+
+def esc_to_menu():
+    visual_effect("Returning to menu")
+    main()
 
 def show_users():
     response = requests.get(f'{API_URL}/users')
@@ -38,8 +38,6 @@ def show_users():
         GREEN = '\033[92m'
         YELLOW = '\033[93m'
         RESET = '\033[0m'
-
-        
 
         for user in users: 
             id, email, password, name, status = user
@@ -59,7 +57,6 @@ def show_users():
             print("")
     else:
         print("No users found")
-        
 
 def validate_password(password):
     if len(password) < 8 or len(password) > 12:
@@ -130,9 +127,42 @@ def check_email():
         else:
             print("Emails do not match. Please try again.")
 
+def verify_email(email):
+    response = requests.post(VERIFICATION_API_URL, json={'email': email})
+    if response.status_code == 200:
+        verification_code = response.json().get('verification_code')
+        qty_attempts = 1
+        for attempts in range(3):
+            user_code = input("\nPlease, enter the verification code sent to your email: ")
+            visual_effect(f"\nChecking code - attempt {qty_attempts}/3",duration=8)
+            if user_code == verification_code:
+                print("\nCódigo confirmado com sucesso!")
+                return True
+            else:
+                qty_attempts += 1         
+    else:
+        print("Error sending verification email.")
+        return False
+
+def user_exists(user_id):
+    response = requests.get(f'{API_URL}/users/{user_id}')
+    return response.status_code == 200
+
+def test_user_exists(user_id):
+    visual_effect("\nVerificando se usuario selecionado existe",duration=7)
+    if user_exists(user_id):
+        print(f"User with ID {user_id} exists.")
+    else:
+        print(f"User with ID {user_id} does not exist.")
+        main()
+
 def add_user():
  
     email = check_email()
+   
+    if not verify_email(email):  # Adicione esta linha para verificar o email
+        print("Verification failed. Returning to main menu.")
+        return
 
     # REGRA CARACTERES PASSWORD
     password = get_valid_password()
@@ -153,7 +183,6 @@ def add_user():
     else:
         print(f"\nError creating user {name}.")
     
-
 def delete_user():
     
     # ANSI CODE FOR COLOR
@@ -164,6 +193,8 @@ def delete_user():
     if user_id.lower() == "esc":
         main()
     user_id = int(user_id)
+
+    test_user_exists(user_id)
 
     confirmation = input(f"\n{RED}Are you sure you want to delete the user id'{user_id}'?  (y/n):  {RESET}").lower()
     if confirmation != 'y':
@@ -212,7 +243,6 @@ def troca_senha():
     else:
         print(f"\nError updating user {user_id}")   
     
-
 def altera_status():
     user_id = (input("\nPlease, enter the user ID to update the status (type esc to quit): "))
     if user_id.lower() == "esc":
@@ -228,7 +258,6 @@ def altera_status():
         print(f"\nUser {user_id} status updated successfully")
     else:
         print(f"\nError updating user {user_id}") 
-
 
 def main():
     while True:
@@ -258,8 +287,6 @@ def main():
             break
         else:
             print("Invalid option")
-    
-
 
 if __name__ == "__main__":
     main()
