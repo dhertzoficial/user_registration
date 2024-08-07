@@ -19,7 +19,7 @@ def email_exists(email):
     if response.status_code == 200:
         users = response.json()
         for user in users:
-            if user[1] == email:  # Verifica se o email já existe no banco de dados
+            if user["email"] == email:  # Verifica se o email já existe no banco de dados
                 return True
     return False
 
@@ -34,32 +34,18 @@ def email_exists_text(email):
         print(f"\n{GREEN}Email {email} does not exist in the database.{RESET}")
         status_email = "ok"
 
+def id_exists(user_id):
+    response = requests.get(f'{API_URL}/users/exists?id={user_id}')
+    return response.json()['exists']
 
-
-def user_exists(user_id):
-    response = requests.get(f'{API_URL}/users')
-    if response.status_code == 200:
-        users = response.json()
-        for user in users:
-            if user[0] == user_id:  # Verifica se o ID do usuário corresponde ao ID procurado
-                return True
-    return False
-
-def test_user_exists(user_id):
-    visual_effect("\nChecking if user exists")
-    if user_exists(user_id):
-        print(f"\n{GREEN}User with ID {user_id} exists.{RESET}")
-        status_user = "ok"
+def id_existence(user_id):
+    visual_effect("\nVerifying if user exists in database")
+    if id_exists(user_id):
+        print(f"\n{GREEN}O usuário com ID {user_id} existe no banco de dados.{RESET}")
+        return True
     else:
-        print(f"\n{RED}User with ID {user_id} does not exist.{RESET}")
-        status_user = "nok"
-    return status_user
-
-def verify_user_existence(user_id):
-    status_user = test_user_exists(user_id)
-    if status_user == "nok":
+        print(f"\n{RED}O usuário com ID {user_id} não existe no banco de dados.{RESET}")
         return False
-    return True
 
 def visual_effect(message="Carregando", duration=10):
     print(message, end="")
@@ -84,7 +70,7 @@ def show_users():
         print("-"*100)            
 
         for user in users: 
-            id, email, password, name, status = user
+            id, email, password, name, status = user["id"], user["email"], user["password"], user["name"], user["status"]
             status = int(status)
             if status == 0:
                 color = RED
@@ -145,7 +131,7 @@ def check_email():
             visual_effect("\nMain menu selected ")
             main()
 
-        visual_effect("Conferindo requisitos de emails")
+        visual_effect("\nConferindo requisitos de emails")
         # regra para conter arroba no email
         if "@" not in email:
             print("Error: Email invalid. No @.")
@@ -169,7 +155,7 @@ def check_email():
             visual_effect("\nMain menu selected ")
             main()
     
-        visual_effect("Conferindo igualdade de emails")
+        visual_effect("\nConferindo igualdade de emails")
         if email == email_confirm:
             return email
         else:
@@ -229,8 +215,9 @@ def delete_user():
         main()
     user_id = int(user_id)
 
-    if not verify_user_existence(user_id):
-        return
+    if not id_existence(user_id):
+        print(f"\nTente novamente com um id existente.")
+        delete_user()
 
     confirmation = input(f"\n{RED}Are you sure you want to delete the user id'{user_id}'?  (y/n):  {RESET}").lower()
     if confirmation != 'y':
@@ -249,8 +236,9 @@ def update_user():
         main()
     user_id = int(user_id)
     
-    if not verify_user_existence(user_id):
-        return
+    if not id_existence(user_id):
+        print(f"\nTente novamente com um id existente.")
+        update_user()
     
     email = check_email()
     name = input("\nPlease, enter new name (type esc do quit): ").upper()
@@ -264,6 +252,7 @@ def update_user():
     visual_effect("\nContating database",duration=15)
     if response.status_code == 200:
         print(f"\nUser {user_id} updated successfully")
+        main()
     else:
         print(f"\nError updating user {user_id}")
 
@@ -273,8 +262,9 @@ def troca_senha():
         main()
     user_id = int(user_id)
 
-    if not verify_user_existence(user_id):
-        return
+    if not id_existence(user_id):
+        print(f"\nTente novamente com um id existente.")
+        troca_senha()
 
     password = get_valid_password()
     user_data = {
@@ -293,8 +283,9 @@ def altera_status():
         main()
     user_id = int(user_id)
 
-    if not verify_user_existence(user_id):  
-        return
+    if not id_existence(user_id):
+        print(f"\nTente novamente com um id existente.")
+        altera_status()
 
     status = input("\nPlease, enter the new status (0 == inactive, 1 == pending, 2 == active): ")
     user_data = {
@@ -304,6 +295,7 @@ def altera_status():
     visual_effect("\nContating database",duration=15)
     if response.status_code == 200:
         print(f"\nUser {user_id} status updated successfully")
+        main()
     else:
         print(f"\nError updating user {user_id}") 
 
