@@ -8,15 +8,65 @@ import re # regra de caracteres para passwords
 API_URL = 'http://127.0.0.1:5000'
 VERIFICATION_API_URL = 'http://127.0.0.1:5001/verify'  
 
+# ANSI CODE FOR COLOR
+RED = '\033[91m'
+RESET = '\033[0m'
+GREEN = '\033[92m'
+YELLOW = '\033[93m'
+
+def email_exists(email):
+    response = requests.get(f'{API_URL}/users')
+    if response.status_code == 200:
+        users = response.json()
+        for user in users:
+            if user[1] == email:  # Verifica se o email já existe no banco de dados
+                return True
+    return False
+
+status_email = ""
+def email_exists_text(email):
+    global status_email
+    visual_effect("\nCheckin if have same email in database")
+    if email_exists(email):
+        print(f"\n{RED}Email {email} already exists in the database. Try again with another email{RESET}")
+        status_email = "nok"
+    else:
+        print(f"\n{GREEN}Email {email} does not exist in the database.{RESET}")
+        status_email = "ok"
+
+
+
+def user_exists(user_id):
+    response = requests.get(f'{API_URL}/users')
+    if response.status_code == 200:
+        users = response.json()
+        for user in users:
+            if user[0] == user_id:  # Verifica se o ID do usuário corresponde ao ID procurado
+                return True
+    return False
+
+def test_user_exists(user_id):
+    visual_effect("\nChecking if user exists")
+    if user_exists(user_id):
+        print(f"\n{GREEN}User with ID {user_id} exists.{RESET}")
+        status_user = "ok"
+    else:
+        print(f"\n{RED}User with ID {user_id} does not exist.{RESET}")
+        status_user = "nok"
+    return status_user
+
+def verify_user_existence(user_id):
+    status_user = test_user_exists(user_id)
+    if status_user == "nok":
+        return False
+    return True
+
 def visual_effect(message="Carregando", duration=10):
     print(message, end="")
     for _ in range (duration):
         print(".", end="", flush=True)
         time.sleep(0.1)
     print("Ok")
-
-def user_exists(user_id):
-    pass
 
 def esc_to_menu():
     visual_effect("Returning to menu")
@@ -32,12 +82,6 @@ def show_users():
         # USER HEADER
         print(f"\n{'ID':<4} | {'EMAIL':<30} | {'PASSWORD':<12} | {'NAME':<30} | {'STATUS':<10}")
         print("-"*100)            
-
-        # ANSI COLOR
-        RED = '\033[91m'
-        GREEN = '\033[92m'
-        YELLOW = '\033[93m'
-        RESET = '\033[0m'
 
         for user in users: 
             id, email, password, name, status = user
@@ -100,7 +144,7 @@ def check_email():
         if email == "esc":
             visual_effect("\nMain menu selected ")
             main()
-            
+
         visual_effect("Conferindo requisitos de emails")
         # regra para conter arroba no email
         if "@" not in email:
@@ -114,6 +158,10 @@ def check_email():
 
         if len(email) < 8:
             print("Error: Email invalid. Too short.")
+            continue
+
+        email_exists_text(email)
+        if status_email == "nok":
             continue
 
         email_confirm = input("\nPlease, confirm your email (type ESC to return to main menu): ").lower()
@@ -144,24 +192,11 @@ def verify_email(email):
         print("Error sending verification email.")
         return False
 
-def user_exists(user_id):
-    response = requests.get(f'{API_URL}/users/{user_id}')
-    return response.status_code == 200
-
-def test_user_exists(user_id):
-    visual_effect("\nVerificando se usuario selecionado existe",duration=7)
-    if user_exists(user_id):
-        print(f"User with ID {user_id} exists.")
-    else:
-        print(f"User with ID {user_id} does not exist.")
-        main()
-
 def add_user():
  
     email = check_email()
    
-    if not verify_email(email):  # Adicione esta linha para verificar o email
-        print("Verification failed. Returning to main menu.")
+    if not verify_email(email):
         return
 
     # REGRA CARACTERES PASSWORD
@@ -194,7 +229,8 @@ def delete_user():
         main()
     user_id = int(user_id)
 
-    test_user_exists(user_id)
+    if not verify_user_existence(user_id):
+        return
 
     confirmation = input(f"\n{RED}Are you sure you want to delete the user id'{user_id}'?  (y/n):  {RESET}").lower()
     if confirmation != 'y':
@@ -212,6 +248,10 @@ def update_user():
     if user_id.lower() == "esc":
         main()
     user_id = int(user_id)
+    
+    if not verify_user_existence(user_id):
+        return
+    
     email = check_email()
     name = input("\nPlease, enter new name (type esc do quit): ").upper()
     if name == "ESC":
@@ -232,6 +272,10 @@ def troca_senha():
     if user_id.lower() == "esc":
         main()
     user_id = int(user_id)
+
+    if not verify_user_existence(user_id):
+        return
+
     password = get_valid_password()
     user_data = {
         'password': password,
@@ -248,6 +292,10 @@ def altera_status():
     if user_id.lower() == "esc":
         main()
     user_id = int(user_id)
+
+    if not verify_user_existence(user_id):  
+        return
+
     status = input("\nPlease, enter the new status (0 == inactive, 1 == pending, 2 == active): ")
     user_data = {
         'status': status,
