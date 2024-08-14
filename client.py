@@ -6,7 +6,9 @@ import re # regra de caracteres para passwords
 #STATUS CODES: 0 == inactive; 1 == pending; 2 == active
 
 API_URL = 'http://127.0.0.1:5000'
-VERIFICATION_API_URL = 'http://127.0.0.1:5001/verify'  
+GENERATING_CODE = 'http://127.0.0.1:5001/generate-code'
+VERIFICATION_CODE = 'http://127.0.0.1:5001/verify-code'  
+
 
 # ANSI CODE FOR COLOR
 RED = '\033[91m'
@@ -152,29 +154,45 @@ def check_email():
         else:
             print("Emails do not match. Please try again.")
 
-def verify_email(email):
-    response = requests.post(VERIFICATION_API_URL, json={'email': email})
-    if response.status_code == 200:
-        verification_code = response.json().get('verification_code')
-        qty_attempts = 1
-        for attempts in range(3):
-            user_code = input("\nPlease, enter the verification code sent to your email: ")
-            visual_effect(f"\nChecking code - attempt {qty_attempts}/3",duration=8)
-            if user_code == verification_code:
-                print("\nCódigo confirmado com sucesso!")
-                return True
-            else:
-                qty_attempts += 1         
-    else:
-        print("Error sending verification email.")
-        return False
+# Função para gerar o código de verificação
+def generate_code(email):
+    url = GENERATING_CODE
+    data = {"email": email}
+    try:
+        response = requests.post(url, json=data)
+        response.raise_for_status()  # Levanta um erro se o status não for 200
+        print(f"Código de verificação enviado para {email}.")
+    except requests.exceptions.HTTPError as http_err:
+        print(f"Erro HTTP ao gerar código: {http_err}")
+        print(f"Resposta do servidor: {response.text}")
+    except Exception as err:
+        print(f"Erro ao gerar código: {err}")
+
+# Função para verificar o código de verificação
+def verify_code(email, code):
+    url = VERIFICATION_CODE
+    data = {"email": email, "code": code}
+    try:
+        response = requests.post(url, json=data)
+        response.raise_for_status()  # Levanta um erro se o status não for 200
+        print("{GREEN}Código de verificação válido!{RESET}")
+    except requests.exceptions.HTTPError as http_err:
+        print(f"Erro HTTP ao verificar código: {http_err}")
+        print(f"Resposta do servidor: {response.text}")
+    except Exception as err:
+        print(f"Erro ao verificar código: {err}")
 
 def add_user():
  
     email = check_email()
-   
-    if not verify_email(email):
-        return
+
+    generate_code(email)
+
+    code = input("\nInsira o código recebido por email: ")
+
+    visual_effect("\nConferindo código no servidor")
+
+    verify_code(email,code)
 
     # REGRA CARACTERES PASSWORD
     password = get_valid_password()
