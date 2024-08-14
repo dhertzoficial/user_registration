@@ -15,24 +15,16 @@ GREEN = '\033[92m'
 YELLOW = '\033[93m'
 
 def email_exists(email):
-    response = requests.get(f'{API_URL}/users')
-    if response.status_code == 200:
-        users = response.json()
-        for user in users:
-            if user["email"] == email:  # Verifica se o email já existe no banco de dados
-                return True
-    return False
+    response = requests.get(f'{API_URL}/users/email_exists?email={email}')
+    return response.json()['exists']
 
-status_email = ""
-def email_exists_text(email):
-    global status_email
-    visual_effect("\nCheckin if have same email in database")
+def email_existence(email):
     if email_exists(email):
-        print(f"\n{RED}Email {email} already exists in the database. Try again with another email{RESET}")
-        status_email = "nok"
+        print(f"\n{RED}O email: {email} já existe no banco de dados. Tente outro email.{RESET}")
+        return True
     else:
-        print(f"\n{GREEN}Email {email} does not exist in the database.{RESET}")
-        status_email = "ok"
+        print(f"\n{GREEN}O email {email} não existe no banco de dados.{RESET}")
+        return False
 
 def id_exists(user_id):
     response = requests.get(f'{API_URL}/users/exists?id={user_id}')
@@ -66,11 +58,11 @@ def show_users():
         visual_effect("\nShowing users")
 
         # USER HEADER
-        print(f"\n{'ID':<4} | {'EMAIL':<30} | {'PASSWORD':<12} | {'NAME':<30} | {'STATUS':<10}")
+        print(f"\n{'ID':<4} | {'EMAIL':<30} | {'NAME':<30} | {'STATUS':<10}")
         print("-"*100)            
 
         for user in users: 
-            id, email, password, name, status = user["id"], user["email"], user["password"], user["name"], user["status"]
+            id, email, name, status = user["id"], user["email"], user["name"], user["status"]
             status = int(status)
             if status == 0:
                 color = RED
@@ -83,7 +75,7 @@ def show_users():
                 status_string = "Active"
 
             
-            print(f"{id:<4} | {email:<30} | {password:<12} | {name:<30} | {color}{status_string:<10}{RESET}")
+            print(f"{id:<4} | {email:<30} | {name:<30} | {color}{status_string:<10}{RESET}")
             print("")
     else:
         print("No users found")
@@ -146,9 +138,8 @@ def check_email():
             print("Error: Email invalid. Too short.")
             continue
 
-        email_exists_text(email)
-        if status_email == "nok":
-            continue
+        if email_existence(email):
+            add_user()
 
         email_confirm = input("\nPlease, confirm your email (type ESC to return to main menu): ").lower()
         if email_confirm == "esc":
@@ -227,6 +218,7 @@ def delete_user():
         visual_effect("\nContating database",duration=15)
         if response.status_code == 200:
             print(f"\nUser {user_id} deleted successfully")
+            main()
         else:
             print(f"\nError deleting user {user_id}")
 
@@ -274,6 +266,7 @@ def troca_senha():
     visual_effect("\nContating database",duration=15)
     if response.status_code == 200:
         print(f"\nUser {user_id} password updated successfully")
+        main()
     else:
         print(f"\nError updating user {user_id}")   
     
