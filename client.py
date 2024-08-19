@@ -1,7 +1,7 @@
 import time
 import requests
-import pwinput # essa biblioteca precisa ser instalada e tem objetivo de mostrar asteriscos no terminal ao digitar password
-import re # regra de caracteres para passwords
+import pwinput # This library needs to be installed and the goal is to show the * in the terminal when something is typed
+import re # password requirements
 
 #STATUS CODES: 0 == inactive; 1 == pending; 2 == active
 
@@ -22,10 +22,10 @@ def email_exists(email):
 
 def email_existence(email):
     if email_exists(email):
-        print(f"\n{RED}O email: {email} já existe no banco de dados. Tente outro email.{RESET}")
+        print(f"\n{RED}The email: {email} already exists in the database. Try another one.{RESET}")
         return True
     else:
-        print(f"\n{GREEN}O email {email} não existe no banco de dados.{RESET}")
+        print(f"\n{GREEN}The email {email} doesn't exist in the database.{RESET}")
         return False
 
 def id_exists(user_id):
@@ -35,13 +35,13 @@ def id_exists(user_id):
 def id_existence(user_id):
     visual_effect("\nVerifying if user exists in database")
     if id_exists(user_id):
-        print(f"\n{GREEN}O usuário com ID {user_id} existe no banco de dados.{RESET}")
+        print(f"\n{GREEN}The user with id: {user_id} already exists in the database.{RESET}")
         return True
     else:
-        print(f"\n{RED}O usuário com ID {user_id} não existe no banco de dados.{RESET}")
+        print(f"\n{RED}The user with id: {user_id} doesn't exist in the database.{RESET}")
         return False
 
-def visual_effect(message="Carregando", duration=10):
+def visual_effect(message="Processing", duration=10):
     print(message, end="")
     for _ in range (duration):
         print(".", end="", flush=True)
@@ -105,7 +105,7 @@ def get_valid_password(prompt='''
             password = pwinput.pwinput(prompt, mask='*')
             if password.lower() == "esc":
                 main()
-            visual_effect("Conferindo requisitos de senha")
+            visual_effect("Checking Password Requirements")
             validate_password(password)
             password_confirm = pwinput.pwinput("\nPlease, confirm your password (Type esc to go to main menu): ")
             if password_confirm == "esc":
@@ -125,13 +125,13 @@ def check_email():
             visual_effect("\nMain menu selected ")
             main()
 
-        visual_effect("\nConferindo requisitos de emails")
-        # regra para conter arroba no email
+        visual_effect("\nChecking the email requirements")
+        # Condition to Contain the @ Symbol in the Email
         if "@" not in email:
             print("Error: Email invalid. No @.")
             continue
     
-        # regra para conter ponto no email
+        # Condition to Contain a Dot in the Emai
         if "." not in email:
             print("Error: Email invalid. No dot.")
             continue
@@ -148,39 +148,39 @@ def check_email():
             visual_effect("\nMain menu selected ")
             main()
     
-        visual_effect("\nConferindo igualdade de emails")
+        visual_effect("\nChecking Email Equality")
         if email == email_confirm:
             return email
         else:
             print("Emails do not match. Please try again.")
 
-# Função para gerar o código de verificação
+# Function to generate verification code
 def generate_code(email):
     url = GENERATING_CODE
     data = {"email": email}
     try:
         response = requests.post(url, json=data)
-        response.raise_for_status()  # Levanta um erro se o status não for 200
-        print(f"Código de verificação enviado para {email}.")
+        response.raise_for_status()  # raise an error if the status code is not 200
+        print(f"Verification code sent to {email}.")
     except requests.exceptions.HTTPError as http_err:
-        print(f"Erro HTTP ao gerar código: {http_err}")
-        print(f"Resposta do servidor: {response.text}")
+        print(f"Error HTTP in generating code: {http_err}")
+        print(f"Server response: {response.text}")
     except Exception as err:
-        print(f"Erro ao gerar código: {err}")
+        print(f"Error in generating code: {err}")
 
-# Função para verificar o código de verificação
+# function to verify the verification code
 def verify_code(email, code):
     url = VERIFICATION_CODE
     data = {"email": email, "code": code}
     try:
         response = requests.post(url, json=data)
-        response.raise_for_status()  # Levanta um erro se o status não for 200
-        print("Código de verificação válido!")
+        response.raise_for_status()  # raise an error if the status code is not 200
+        print("Verification code is valid!")
     except requests.exceptions.HTTPError as http_err:
-        print(f"Erro HTTP ao verificar código: {http_err}")
-        print(f"Resposta do servidor: {response.text}")
+        print(f"HTTP error during code verification: {http_err}")
+        print(f"server response: {response.text}")
     except Exception as err:
-        print(f"Erro ao verificar código: {err}")
+        print(f"Code verification error: {err}")
 
 def add_user():
  
@@ -188,13 +188,13 @@ def add_user():
 
     generate_code(email)
 
-    code = input("\nInsira o código recebido por email: ")
+    code = input("\nEnter the code received by email: ")
 
-    visual_effect("\nConferindo código no servidor")
+    visual_effect("\nChecking the code on the server")
 
     verify_code(email,code)
 
-    # REGRA CARACTERES PASSWORD
+    # checking password requirements
     password = get_valid_password()
 
     name = input("\nPlease, enter your name (Type esc do go to main menu): ").upper()
@@ -225,12 +225,12 @@ def delete_user():
     user_id = int(user_id)
 
     if not id_existence(user_id):
-        print(f"\nTente novamente com um id existente.")
+        print(f"\nTry again with a valide id.")
         delete_user()
 
     confirmation = input(f"\n{RED}Are you sure you want to delete the user id'{user_id}'?  (y/n):  {RESET}").lower()
     if confirmation != 'y':
-        print(f"\nOperação abortada")
+        print(f"\nOperation canceled")
     else:
         response = requests.delete(f'{API_URL}/users/{user_id}')
         visual_effect("\nContating database",duration=15)
@@ -247,7 +247,7 @@ def update_user():
     user_id = int(user_id)
     
     if not id_existence(user_id):
-        print(f"\nTente novamente com um id existente.")
+        print(f"\nTry again with an existing ID.")
         update_user()
     
     email = check_email()
@@ -266,15 +266,15 @@ def update_user():
     else:
         print(f"\nError updating user {user_id}")
 
-def troca_senha():
+def change_password():
     user_id = (input("\nPlease, enter the user ID to update the password (type esc to quit): "))
     if user_id.lower() == "esc":
         main()
     user_id = int(user_id)
 
     if not id_existence(user_id):
-        print(f"\nTente novamente com um id existente.")
-        troca_senha()
+        print(f"\nTry again with an existing ID.")
+        change_password()
 
     password = get_valid_password()
     user_data = {
@@ -288,15 +288,15 @@ def troca_senha():
     else:
         print(f"\nError updating user {user_id}")   
     
-def altera_status():
+def update_status():
     user_id = (input("\nPlease, enter the user ID to update the status (type esc to quit): "))
     if user_id.lower() == "esc":
         main()
     user_id = int(user_id)
 
     if not id_existence(user_id):
-        print(f"\nTente novamente com um id existente.")
-        altera_status()
+        print(f"\nTry again with an existing ID.")
+        update_status()
 
     status = input("\nPlease, enter the new status (0 == inactive, 1 == pending, 2 == active): ")
     user_data = {
@@ -331,9 +331,9 @@ def main():
         elif choose == "4":
             update_user()
         elif choose == "5":
-            troca_senha()
+            change_password()
         elif choose == "6":
-            altera_status()
+            update_status()
         elif choose == "9":
             break
         else:
