@@ -8,14 +8,14 @@ def id_exists(user_id):
 
 def id_existence(user_id):
     if id_exists(user_id):
-        print(f"O usuário com ID {user_id} existe no banco de dados.")
+        print(f"The User with ID {user_id} exists in the database.")
         return True
     else:
-        print(f"O usuário com ID {user_id} não existe no banco de dados.")
+        print(f"O usuário com ID {user_id} doesn't exists in the database.")
         return False
 
 def main():
-    user_id = input("Digite o ID do usuário para verificar: ")
+    user_id = input("Enter the User ID to Verify: ")
     id_existence(user_id)
 
 if __name__ == "__main__":

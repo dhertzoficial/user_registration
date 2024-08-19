@@ -8,14 +8,14 @@ def email_exists(email):
 
 def email_existence(email):
     if email_exists(email):
-        print(f"O email: {email} existe no banco de dados.")
+        print(f"The email {email} Exists in the Database.")
         return True
     else:
-        print(f"O email {email} não existe no banco de dados.")
+        print(f"The email {email} doesn't exists in the Database.")
         return False
 
 def main():
-    email = input("Digite o email para verificar: ")
+    email = input("Enter the Email to Verify: ")
     email_existence(email)
 
 if __name__ == "__main__":

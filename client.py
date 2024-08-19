@@ -175,7 +175,7 @@ def verify_code(email, code):
     try:
         response = requests.post(url, json=data)
         response.raise_for_status()  # Levanta um erro se o status não for 200
-        print("{GREEN}Código de verificação válido!{RESET}")
+        print("Código de verificação válido!")
     except requests.exceptions.HTTPError as http_err:
         print(f"Erro HTTP ao verificar código: {http_err}")
         print(f"Resposta do servidor: {response.text}")
